@@ -5,15 +5,14 @@ import os
 def plot_trajectory(results_dict, benchmark_name, save_dir="experiments"):
     """
     Plots the optimization trajectory (best value found over time).
-    Args:results_dict (dict): Keys are labels (e.g. "ExactMLL+Adam"), 
-        Values are lists of cost values from the run.
-        benchmark_name (str): Name of the function (e.g. "Ackley").
-        save_dir (str): Folder to save the plot.
     """
     plt.figure(figsize=(10, 6))
     
+    # Collect all values to decide on scaling later
+    all_values = []
+
     for label, costs in results_dict.items():
-        # Convert raw costs to a best so far trajectory
+        # Calculate trajectory: running minimum
         trajectory = []
         current_best = np.inf
         
@@ -21,14 +20,23 @@ def plot_trajectory(results_dict, benchmark_name, save_dir="experiments"):
             if c < current_best:
                 current_best = c
             trajectory.append(current_best)
+            all_values.append(current_best)
             
         plt.plot(trajectory, label=label, linewidth=2)
 
-    plt.title(f"Optimization Trajectory on {benchmark_name}")
+    plt.title(f"Optimization Trajectory: {benchmark_name}")
     plt.xlabel("Number of Function Evaluations")
-    plt.ylabel("Best Cost (Log Scale)")
-    plt.yscale("log") # Log scale helps see differences near zero
-    plt.grid(True, which="both", ls="-", alpha=0.3)
+    plt.ylabel("Best Cost Found")
+    
+    # If any value is <= 0, we cannot use log scale. Switch to linear.
+    if any(v <= 0 for v in all_values):
+        plt.yscale("linear")
+        plt.grid(True, which="both", linestyle="--", alpha=0.5)
+    else:
+        plt.yscale("log")
+        plt.grid(True, which="both", ls="-", alpha=0.3)
+    # -------------------------
+
     plt.legend()
     
     # Ensure directory exists

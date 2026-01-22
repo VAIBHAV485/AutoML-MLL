@@ -19,12 +19,12 @@ class ExactGPModel(gpytorch.models.ExactGP):
         covar_x = self.covar_module(x)
         return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
     
-    # --- FIX for LBFGS/BoTorch ---
     def transform_inputs(self, X):
-        """Required by BoTorch optimizers to handle input transforms."""
+        """Required by BoTorch optimizers."""
         return X 
 
 class VariationalGPModel(gpytorch.models.ApproximateGP):
+    """Required for PredictiveLL (Variational)"""
     def __init__(self, inducing_points):
         variational_distribution = gpytorch.variational.CholeskyVariationalDistribution(inducing_points.size(0))
         variational_strategy = gpytorch.variational.VariationalStrategy(
@@ -79,15 +79,20 @@ class GPyTorchSurrogate(AbstractModel):
         train_x = torch.tensor(X_norm, dtype=torch.float32)
         train_y = torch.tensor(y_norm, dtype=torch.float32).squeeze()
 
-        # 2. Select Model
+        # 2. Select Model based on MLL type
         self.likelihood = GaussianLikelihood()
         
-        if self.mll_type == "ELBO":
+        # PredictiveLL requires Variational GP (Inducing Points)
+        if self.mll_type == "PredictiveLL":
+            # Use subset of data as inducing points (max 50)
             num_inducing = min(50, train_x.size(0))
+            # Random selection of inducing points
             indices = torch.randperm(train_x.size(0))[:num_inducing]
             inducing_points = train_x[indices]
+            
             self.gp = VariationalGPModel(inducing_points)
         else:
+            # Standard Exact GP for ExactMLL and LOO
             self.gp = ExactGPModel(train_x, train_y, self.likelihood)
 
         # 3. Get MLL & Train

@@ -101,9 +101,10 @@ def main():
     configurations = [
         ("ExactMLL", "Adam"),
         ("ExactMLL", "LBFGS"),
+        ("LOO", "LBFGS"),
         ("LOO", "Adam"),
-        ("ELBO", "Adam"),
-        ("Baseline", "None")
+        ("Baseline", "None"),
+        ("PredictiveLL", "Adam")
     ]
 
     for bench_cls in benchmarks:
